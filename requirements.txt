@@ -1,0 +1,6 @@
+# Core (pure Python — no Spark needed for the planner itself)
+networkx>=3.0
+pytest>=8.0
+
+# Optional: render lineage.png (requires the Graphviz system package first)
+# pygraphviz>=1.11

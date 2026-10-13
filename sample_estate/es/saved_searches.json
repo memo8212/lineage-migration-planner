@@ -1,0 +1,7 @@
+{
+  "searches": [
+    { "name": "high_value_cards", "index": "bank-dept-*",
+      "query": { "bool": { "must": [ { "term": { "dept": "cards" } },
+                                     { "range": { "amount": { "gte": 1000 } } } ] } } }
+  ]
+}

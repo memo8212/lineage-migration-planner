@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE POWERMART SYSTEM "powrmart.dtd">
+<POWERMART CREATION_DATE="01/15/2026" REPOSITORY_VERSION="188.95">
+<REPOSITORY NAME="REP_BANK" VERSION="188">
+<FOLDER NAME="BANK_ETL" OWNER="etl_admin">
+  <MAPPING NAME="m_load_dept_txn" ISVALID="YES">
+    <TRANSFORMATION NAME="SQ_DEPT_TXN" TYPE="Source Qualifier">
+      <TABLEATTRIBUTE NAME="Sql Query" VALUE="SELECT * FROM DEPT_TXN"/>
+    </TRANSFORMATION>
+    <TRANSFORMATION NAME="EXP_NORM" TYPE="Expression">
+      <TRANSFORMFIELD NAME="AMOUNT_BASE" EXPRESSION="ROUND(AMOUNT, 2)" PORTTYPE="OUTPUT"/>
+    </TRANSFORMATION>
+    <TRANSFORMATION NAME="AGG_DAILY" TYPE="Aggregator"/>
+    <TRANSFORMATION NAME="UPD_STRAT" TYPE="Update Strategy"/>
+  </MAPPING>
+  <SESSION NAME="s_dept_cards" MAPPINGNAME="m_load_dept_txn"/>
+  <WORKFLOW NAME="WF_DAILY_BANK_FEED">
+    <TASK NAME="start" TYPE="Start"/>
+    <TASK NAME="s_dept_cards" TYPE="Session"/>
+    <TASK NAME="s_gold_summary" TYPE="Session"/>
+    <WORKFLOWLINK FROMTASK="start" TOTASK="s_dept_cards"/>
+    <WORKFLOWLINK FROMTASK="s_dept_cards" TOTASK="s_gold_summary"/>
+  </WORKFLOW>
+</FOLDER>
+</REPOSITORY>
+</POWERMART>

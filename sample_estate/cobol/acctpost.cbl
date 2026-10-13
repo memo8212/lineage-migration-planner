@@ -1,0 +1,26 @@
+       IDENTIFICATION DIVISION.
+       PROGRAM-ID. ACCTPOST.
+      *> Apply transactions to the account master (VSAM KSDS).
+       ENVIRONMENT DIVISION.
+       INPUT-OUTPUT SECTION.
+       FILE-CONTROL.
+           SELECT TRAN-FILE   ASSIGN TO TRANS.
+           SELECT ACCT-MASTER ASSIGN TO ACCTMAST
+               ORGANIZATION IS INDEXED
+               ACCESS MODE  IS RANDOM
+               RECORD KEY   IS ACCT-NO.
+       DATA DIVISION.
+       FILE SECTION.
+       FD  TRAN-FILE.
+       FD  ACCT-MASTER.
+       COPY ACCTREC.
+       PROCEDURE DIVISION.
+       0000-MAIN.
+           OPEN INPUT TRAN-FILE
+           OPEN I-O   ACCT-MASTER
+           READ TRAN-FILE
+           READ ACCT-MASTER
+           REWRITE ACCT-MASTER
+           CLOSE TRAN-FILE
+           CLOSE ACCT-MASTER
+           STOP RUN.

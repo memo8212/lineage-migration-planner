@@ -1,0 +1,9 @@
+{
+  "description": "normalize department transaction documents",
+  "processors": [
+    { "rename": { "field": "DEPT_CODE", "target_field": "dept" } },
+    { "lowercase": { "field": "dept" } },
+    { "convert": { "field": "AMOUNT", "type": "double", "target_field": "amount" } },
+    { "date": { "field": "TXN_DATE", "target_field": "txn_date" } }
+  ]
+}

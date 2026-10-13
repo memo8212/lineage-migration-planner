@@ -1,0 +1,15 @@
+{
+  "index_patterns": ["bank-dept-*"],
+  "template": {
+    "settings": { "number_of_shards": 3 },
+    "mappings": {
+      "properties": {
+        "doc_id": { "type": "keyword" },
+        "dept": { "type": "keyword" },
+        "account_no": { "type": "keyword" },
+        "amount": { "type": "double" },
+        "txn_date": { "type": "date" }
+      }
+    }
+  }
+}
