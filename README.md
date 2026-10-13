@@ -164,6 +164,9 @@ Add a parser in `lineageplanner/parsers/` (subclass `Parser`, implement `matches
 + `parse`) and register it in `parsers/__init__.py`. Add target rules in
 `plan.py`. Everything else (graph, waves, report, plan) works automatically.
 
+See **`TODO.md`** for the full roadmap (planned parsers: Control-M, SSIS, ADF,
+Teradata, stored procedures, BI tools, messaging, config files, …).
+
 ## Notes / scope
 
 - It's a **static analyzer** (regex/XML based), not a compiler: it extracts the
