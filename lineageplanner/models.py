@@ -87,7 +87,11 @@ class Graph:
     def add_node(self, node: Node) -> Node:
         existing = self.nodes.get(node.id)
         if existing:
-            # keep first-seen display info, merge meta
+            # a real node replaces an auto-created placeholder (keep its real name)
+            if existing.meta.get("placeholder") and not node.meta.get("placeholder"):
+                self.nodes[node.id] = node
+                return node
+            # otherwise keep first-seen display info, merge meta
             for k, v in node.meta.items():
                 existing.meta.setdefault(k, v)
             if not existing.path and node.path:
@@ -103,7 +107,7 @@ class Graph:
         for end in (src, dst):
             if end not in self.nodes:
                 prefix, _, name = end.partition(":")
-                self.nodes[end] = Node(id=end, name=name.upper() or end,
+                self.nodes[end] = Node(id=end, name=name or end,
                                        kind={"ds": DATASET}.get(prefix, prefix),
                                        meta={"placeholder": True})
         e = Edge(src, dst, kind, detail)

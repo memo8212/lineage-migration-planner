@@ -26,9 +26,16 @@ class Parser:
 
     name: str = "base"
     extensions: tuple = ()
+    columns: bool = False
 
     def matches(self, path: Path) -> bool:
         return path.suffix.lower() in self.extensions
 
     def parse(self, path: Path, relpath: str, text: str) -> Parsed:  # pragma: no cover
         raise NotImplementedError
+
+
+def stem(path: str) -> str:
+    """Basename without extension, handling both / and \\ separators."""
+    name = path.replace("\\", "/").rstrip("/").split("/")[-1]
+    return name.rsplit(".", 1)[0] if "." in name else name

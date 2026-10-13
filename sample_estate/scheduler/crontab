@@ -1,0 +1,6 @@
+# Bank nightly crontab
+SHELL=/bin/ksh
+0 1 * * * /opt/bank/shell/nightly_orchestrator.sh
+30 2 * * * /opt/bank/shell/etl_nightly.ksh
+0 3 * * 0 /opt/bank/python/transform.py
+15 3 * * * /opt/bank/batch/load_cards.bat

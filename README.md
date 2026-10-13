@@ -98,7 +98,9 @@ offers a **downloadable Markdown report**.
 | **COBOL/JCL** | `PROGRAM-ID`, `SELECT … ASSIGN`, `FD`, `COPY`, `READ/WRITE/REWRITE`, `// EXEC PGM=`, `// DD DSN=`, `sas -sysin`, `pmcmd` | programs, datasets, job steps |
 | **Informatica** | `MAPPING`, `SOURCE`, `TARGET`, `TRANSFORMATION`, `SESSION`, `WORKFLOW`, `WORKFLOWLINK` | mappings, datasets, sessions, workflow DAG |
 | **Elasticsearch** | index mappings (`index_patterns`), ingest `processors`, saved `searches` | indices, pipelines, searches |
-| **Shell** | `sas -sysin`, `python`, `pmcmd`, `bash`, `cp/mv/scp/sftp` | job calls + file landings |
+| **Unix shell** | `.sh/.bash/.ksh/.csh/.zsh`: `sas -sysin`, `python`, `sqlplus @f.sql`, `bteq`, `pmcmd`, `sh/ksh/csh`, `cp/mv/scp/sftp`, `export` | job calls, SQL steps, file landings, params |
+| **Windows batch / PowerShell** | `.bat/.cmd/.ps1`: `call`, `python`, `sas`, `sqlcmd -i`, `bteq`, `Invoke-Sqlcmd`, `copy/move/xcopy/robocopy`, `Copy-Item`, `set` | job calls, SQL steps, file moves, params |
+| **Schedulers** | cron (`crontab`/`.cron`), Autosys JIL (`.jil`), `Makefile` | scheduled jobs + `calls`/`triggers` (conditions, boxes, make deps) |
 | **Python/PySpark** | `read.table/parquet/csv`, `write.saveAsTable/save`, `spark.sql(...)` | program, datasets, files |
 
 ## Migration prediction
@@ -143,12 +145,17 @@ level = longest path from a root, so dependencies migrate before dependents.
 ```
 lineageplanner/
   models.py          Graph + Node/Edge + topo/waves/cycles/degrees
-  parsers/           sas, sql, cobol_jcl, informatica, elasticsearch, shell, python
+  parsers/           sas, sql, cobol_jcl, informatica, elasticsearch, shell,
+                     batch (win/powershell), scheduler (cron/autosys/make), python
+  columns.py         SELECT-list -> column lineage
+  impact.py          downstream/upstream closures + impact report
   plan.py            target rules + complexity + effort + waves
   report.py          Mermaid/DOT/PNG + assessment
-  cli.py             `scan`
-sample_estate/       a mixed, interlinked legacy estate (the demo input)
-tests/               parser + graph + plan tests
+  cli.py             `scan` (+ --columns), `impact`
+sample_estate/       a mixed, interlinked legacy estate (SAS, SQL, COBOL/JCL,
+                     Informatica, ES, shell, batch, PowerShell, cron, Autosys,
+                     Makefile, Python) — the demo input
+tests/               parser + graph + plan + column + impact + scheduler tests
 ```
 
 ## Extend it

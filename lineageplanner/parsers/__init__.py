@@ -4,11 +4,13 @@ from __future__ import annotations
 from pathlib import Path
 
 from lineageplanner.models import Graph
+from lineageplanner.parsers.batch import WindowsParser
 from lineageplanner.parsers.cobol_jcl import CobolJclParser
 from lineageplanner.parsers.elasticsearch import ElasticsearchParser
 from lineageplanner.parsers.informatica import InformaticaParser
 from lineageplanner.parsers.python_src import PythonParser
 from lineageplanner.parsers.sas import SasParser
+from lineageplanner.parsers.scheduler import AutosysParser, CronParser, MakefileParser
 from lineageplanner.parsers.shell import ShellParser
 from lineageplanner.parsers.sql import SqlParser
 
@@ -17,7 +19,11 @@ PARSERS = [
     SasParser(),
     SqlParser(),
     CobolJclParser(),
-    ShellParser(),
+    WindowsParser(),       # .bat / .cmd / .ps1
+    ShellParser(),         # .sh / .bash / .ksh / .csh / .zsh
+    CronParser(),          # crontab / .cron
+    AutosysParser(),       # .jil
+    MakefileParser(),      # Makefile
     ElasticsearchParser(),  # JSON (after XML check)
     PythonParser(),
 ]

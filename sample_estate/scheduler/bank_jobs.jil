@@ -1,0 +1,16 @@
+/* Autosys JIL — bank nightly batch */
+insert_job: JOB_EXTRACT_CARDS
+job_type: c
+command: /opt/bank/shell/etl_nightly.ksh
+machine: bank01
+
+insert_job: JOB_BUILD_MART
+job_type: c
+command: sas -sysin sas/build_mart.sas
+condition: s(JOB_EXTRACT_CARDS)
+
+insert_job: JOB_PUBLISH
+job_type: c
+command: /opt/bank/batch/load_cards.bat
+condition: s(JOB_BUILD_MART)
+box_name: BOX_NIGHTLY
