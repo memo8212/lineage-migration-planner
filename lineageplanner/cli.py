@@ -10,7 +10,11 @@ import json
 import sys
 from pathlib import Path
 
+from lineageplanner.ai import suggest
+from lineageplanner.assistant import assist, assist_report
+from lineageplanner.gaps import detect_gaps
 from lineageplanner.impact import impact_md
+from lineageplanner.overrides import load_overrides, save_overrides
 from lineageplanner.parsers import parse_estate
 from lineageplanner.plan import build_plan, write_plan
 from lineageplanner.report import write_lineage
@@ -22,7 +26,8 @@ def cmd_scan(args) -> int:
         print(f"error: {root} not found", file=sys.stderr)
         return 2
     out = Path(args.out)
-    graph = parse_estate(root, columns=args.columns)
+    overrides = load_overrides(args.overrides) if args.overrides else None
+    graph = parse_estate(root, columns=args.columns, overrides=overrides)
     info = write_lineage(graph, out)
     summary = write_plan(graph, out)
 
@@ -69,6 +74,55 @@ def cmd_impact(args) -> int:
     return 0
 
 
+def cmd_gaps(args) -> int:
+    root = Path(args.dir)
+    if not root.exists():
+        print(f"error: {root} not found", file=sys.stderr)
+        return 2
+    graph = parse_estate(root, columns=args.columns)
+    questions = detect_gaps(graph)
+    if not questions:
+        print("No gaps — the lineage is already end-to-end. ✅")
+        return 0
+    print(f"{len(questions)} gap(s) found — the assistant can help close them:\n")
+    payload = []
+    for q in questions:
+        item = q.to_dict()
+        if args.suggest:
+            s = suggest(q)
+            item["suggested"] = s["answer"]
+            item["reason"] = s["reason"]
+        payload.append(item)
+        extra = f"  [suggest: {item.get('suggested')}]" if args.suggest else ""
+        print(f"- [{q.kind}] {q.prompt}{extra}")
+        if q.options:
+            print(f"    options: {', '.join(q.options)}  (default: {q.default})")
+    if args.json:
+        print(json.dumps(payload, indent=2, sort_keys=True))
+    return 0
+
+
+def cmd_assist(args) -> int:
+    root = Path(args.dir)
+    if not root.exists():
+        print(f"error: {root} not found", file=sys.stderr)
+        return 2
+    answers = {}
+    if args.answers:
+        answers = json.loads(Path(args.answers).read_text())
+    result = assist(root, columns=args.columns, answers=answers,
+                    suggest_missing=args.suggest)
+    out = Path(args.out)
+    out.mkdir(parents=True, exist_ok=True)
+    ov_path = save_overrides(result["overrides"], out / "overrides.yaml")
+    report = assist_report(result)
+    (out / "assist_report.md").write_text(report, encoding="utf-8")
+    print(report)
+    print(f"\n-> {ov_path}\n-> {out / 'assist_report.md'}")
+    print(f"\nRe-scan with: python -m lineageplanner scan {root} --overrides {ov_path}")
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(prog="lineageplanner",
                                  description="Lineage graph + migration planner for legacy estates")
@@ -77,6 +131,7 @@ def main(argv: list[str] | None = None) -> int:
     s.add_argument("dir", help="root directory of the legacy estate")
     s.add_argument("--out", default="artifacts")
     s.add_argument("--columns", action="store_true", help="also extract column-level lineage")
+    s.add_argument("--overrides", default=None, help="assistant overrides file (YAML/JSON)")
     s.add_argument("--json", action="store_true", help="also print the plan summary as JSON")
     s.set_defaults(func=cmd_scan)
 
@@ -86,6 +141,22 @@ def main(argv: list[str] | None = None) -> int:
     im.add_argument("--out", default="artifacts")
     im.add_argument("--columns", action="store_true")
     im.set_defaults(func=cmd_impact)
+
+    gp = sub.add_parser("gaps", help="list unresolved lineage gaps (assistant questions)")
+    gp.add_argument("dir")
+    gp.add_argument("--columns", action="store_true")
+    gp.add_argument("--suggest", action="store_true", help="attach AI/heuristic suggestions")
+    gp.add_argument("--json", action="store_true")
+    gp.set_defaults(func=cmd_gaps)
+
+    asst = sub.add_parser("assist", help="answer gap questions and apply them end-to-end")
+    asst.add_argument("dir")
+    asst.add_argument("--columns", action="store_true")
+    asst.add_argument("--answers", default=None, help="JSON file {question_id: answer}")
+    asst.add_argument("--suggest", action="store_true",
+                      help="auto-fill unanswered gaps with AI/heuristic suggestions")
+    asst.add_argument("--out", default="artifacts")
+    asst.set_defaults(func=cmd_assist)
 
     args = ap.parse_args(argv)
     return args.func(args)

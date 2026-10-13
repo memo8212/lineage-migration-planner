@@ -12,17 +12,16 @@ import streamlit.components.v1 as components
 
 from lineageplanner import build_plan, parse_estate
 from lineageplanner import view
+from lineageplanner.ai import suggest
+from lineageplanner.assistant import build_overrides
+from lineageplanner.gaps import detect_gaps
 from lineageplanner.impact import impact_md, impact_report
+from lineageplanner.overrides import dump_overrides
 from lineageplanner.report import assessment_md, to_dot
 
 st.set_page_config(page_title="Lineage & Migration Planner", layout="wide")
 st.title("🧬 Lineage & Migration Planner")
 st.caption("Parse a legacy estate → linked lineage graph → dependency-ordered migration plan.")
-
-
-@st.cache_resource
-def load_graph(root: str, columns: bool = False):
-    return parse_estate(root, columns=columns)
 
 
 # ------------------------------------------------------------------ sidebar
@@ -34,7 +33,13 @@ if not Path(root).exists():
     st.error(f"Directory not found: {root}")
     st.stop()
 
-graph = load_graph(root, columns)
+overrides = st.session_state.get("overrides")
+graph = parse_estate(root, columns=columns, overrides=overrides)
+if overrides:
+    st.sidebar.success("Assistant overrides applied")
+    if st.sidebar.button("Reset overrides"):
+        st.session_state.pop("overrides", None)
+        st.rerun()
 plan = build_plan(graph)
 stats = graph.stats()
 
@@ -60,7 +65,7 @@ c3.metric("Waves", plan["summary"]["waves"])
 c4.metric("Effort (h)", plan["summary"]["total_effort_hours"])
 c5.metric("Cycles", len(graph.cycles()))
 
-tabs = st.tabs(["🕸️ Graph", "🗺️ Migration plan", "📊 Assessment", "🔎 Inspector"])
+tabs = st.tabs(["🕸️ Graph", "🗺️ Migration plan", "📊 Assessment", "🔎 Inspector", "🤖 Assistant"])
 
 # ------------------------------------------------------------------ graph
 with tabs[0]:
@@ -125,3 +130,30 @@ with tabs[3]:
         components.html(html, height=480, scrolling=True)
     else:
         st.graphviz_chart(to_dot(sub))
+
+# ------------------------------------------------------------------ assistant
+with tabs[4]:
+    st.subheader("🤖 Assistant — complete the end-to-end mapping")
+    st.caption("When the mapping isn't fully resolved, answer a few questions. "
+               "Suggestions come from heuristics, or an LLM if configured "
+               "(`OPENAI_API_KEY` / Databricks). You confirm every answer.")
+    qs = detect_gaps(graph)
+    if not qs:
+        st.success("No open gaps — the lineage is end-to-end. ✅")
+    else:
+        st.info(f"{len(qs)} gap(s) detected. Review the suggestions and apply.")
+        answers = {}
+        for q in qs:
+            s = suggest(q)
+            idx = q.options.index(s["answer"]) if s["answer"] in q.options else 0
+            c1, c2 = st.columns([3, 1])
+            c1.markdown(f"**[{q.kind}]** {q.prompt}")
+            c2.caption(f"🤖 {s['source']}: **{s['answer']}**")
+            answers[q.id] = st.selectbox(q.id, q.options, index=idx, key=f"q_{q.id}",
+                                         label_visibility="collapsed")
+        if st.button("✅ Apply answers & rescan", type="primary"):
+            st.session_state["overrides"] = build_overrides(qs, answers)
+            st.rerun()
+        if overrides:
+            st.download_button("⬇️ Download overrides.yaml", dump_overrides(overrides),
+                               file_name="overrides.yaml")

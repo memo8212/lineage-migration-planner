@@ -39,10 +39,11 @@ def pick_parser(path: Path):
     return None
 
 
-def parse_estate(root: str | Path, columns: bool = False) -> Graph:
+def parse_estate(root: str | Path, columns: bool = False, overrides: dict | None = None) -> Graph:
     """Scan a directory tree and build one deterministic lineage graph.
 
-    Set `columns=True` to also extract column-level lineage.
+    Set `columns=True` to also extract column-level lineage. Pass `overrides`
+    (from the assistant) to patch the graph end-to-end.
     """
     root = Path(root)
     for parser in PARSERS:
@@ -53,9 +54,11 @@ def parse_estate(root: str | Path, columns: bool = False) -> Graph:
                    and not any(part in SKIP_DIRS for part in p.parts)
                    and p.suffix.lower() not in SKIP_EXT)
     parsed_files = 0
+    unknown: list[str] = []
     for path in files:
         parser = pick_parser(path)
         if parser is None:
+            unknown.append(str(path.relative_to(root)))
             continue
         relpath = str(path.relative_to(root))
         try:
@@ -65,6 +68,7 @@ def parse_estate(root: str | Path, columns: bool = False) -> Graph:
         try:
             parsed = parser.parse(path, relpath, text)
         except Exception:  # noqa: BLE001 - never let one file break the scan
+            unknown.append(relpath)
             continue
         parsed_files += 1
         for n in parsed.nodes:
@@ -72,4 +76,8 @@ def parse_estate(root: str | Path, columns: bool = False) -> Graph:
         for e in parsed.edges:
             graph.add_edge(e.src, e.dst, e.kind, e.detail)
     graph.parsed_files = parsed_files  # type: ignore[attr-defined]
+    graph.unknown_files = sorted(unknown)  # type: ignore[attr-defined]
+    if overrides:
+        from lineageplanner.overrides import apply_overrides
+        apply_overrides(graph, overrides)
     return graph

@@ -89,6 +89,40 @@ grouped by kind/tech with a review-effort estimate, plus the **upstream closure*
 (what it depends on). In the app, the **Inspector** tab shows the same numbers and
 offers a **downloadable Markdown report**.
 
+## AI assistant — complete the end-to-end mapping
+
+When the mapping isn't fully resolved, the assistant finds the **gaps** and asks
+you a few targeted questions; you confirm each answer (optionally AI-suggested),
+and it patches the graph so the lineage is end-to-end.
+
+```bash
+python -m lineageplanner gaps sample_estate --suggest        # list gaps + suggestions
+python -m lineageplanner assist sample_estate --suggest \
+  --out artifacts        # auto-fill suggestions, apply, write overrides.yaml + report
+python -m lineageplanner scan sample_estate --overrides artifacts/overrides.yaml
+```
+
+**Gap types detected:** `placeholder` (referenced but never defined),
+`orphan_source` (no producer → external/landing?), `orphan_sink` (no consumer →
+final output?), `unknown_file` (nothing recognized it), `ambiguous_column`
+(attributed to several tables).
+
+**How answers patch the graph** (`overrides.yaml`): mark components
+`external`/`terminal`, set a node's `kind`/`tech`, classify `unknown_files`,
+resolve `ambiguous_column` to the correct source table, `ignore` false
+references, and add `extra_edges` you know exist.
+
+**Suggestions** are layered and human-in-the-loop:
+1. **Heuristic** (offline, always on) — rules over the question context.
+2. **LLM** (optional) — used only if configured via env
+   (`OPENAI_API_KEY` / `OPENAI_BASE_URL` / `OPENAI_MODEL`, or
+   `DATABRICKS_HOST` + `DATABRICKS_TOKEN` + `DATABRICKS_MODEL`). Every suggestion
+   is shown for you to confirm; nothing is applied silently.
+
+In the app, the **🤖 Assistant** tab lists each gap with a dropdown pre-filled by
+the suggestion, an **Apply & rescan** button, and a **download overrides.yaml**.
+The sample estate goes from **19 gaps → 0** after applying suggestions.
+
 ## What it extracts
 
 | Technology | Parses | Produces |

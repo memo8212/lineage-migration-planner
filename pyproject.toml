@@ -7,7 +7,7 @@ name = "lineageplanner"
 version = "0.1.0"
 description = "Build a lineage graph from a legacy estate and plan the Databricks migration"
 requires-python = ">=3.9"
-dependencies = ["networkx>=3.0"]
+dependencies = ["networkx>=3.0", "pyyaml>=6.0"]
 
 [project.optional-dependencies]
 render = ["pygraphviz>=1.11"]

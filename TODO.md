@@ -25,7 +25,8 @@ Roadmap for `lineage-migration-planner`. Legend: `[x]` done · `[ ]` planned ·
 - [x] **Migration plan**: target rules, complexity heuristic, effort estimate, waves
 - [x] **Reports**: `lineage.json/dot/md`, `lineage.png`, `assessment.md`, `migration_plan.json/md`
 - [x] **Streamlit viewer**: interactive graph, plan table, assessment, node inspector + impact + download
-- [x] Tests (26), `ruff`, `pre-commit`, CI
+- [x] **AI assistant** (human-in-the-loop): gap detection, question interview, heuristic + optional LLM suggestions, `overrides.yaml` patch, `gaps`/`assist` CLI, Assistant tab
+- [x] Tests (32), `ruff`, `pre-commit`, CI
 
 ---
 
@@ -89,6 +90,14 @@ Roadmap for `lineage-migration-planner`. Legend: `[x]` done · `[ ]` planned ·
 - [ ] **Column-level impact** — impact analysis over column edges, not just components
 - [ ] **Configurable target map** (YAML) instead of hardcoded rules
 - [ ] **Incremental scanning** (cache parse results by file hash)
+
+### AI assistant follow-ups
+- [ ] **LLM-suggested edges** — propose missing `reads`/`writes` links (not just classify gaps)
+- [ ] **Batch LLM review** of unresolved statements per parser (COBOL/SAS/PowerCenter)
+- [ ] **Confidence + feedback loop** — learn from confirmed answers, re-use across scans
+- [ ] **Free-text answers** — accept "this is a Teradata FastLoad script" and map it
+- [ ] **Column-gap questions** — resolve missing column mappings with an LLM given DDL/copybooks
+- [ ] **Assistant chat** — conversational "why is X not linked?" over the graph
 
 ---
 
