@@ -1,0 +1,7 @@
+# Interactive viewer (Streamlit)
+streamlit>=1.30
+pyvis>=0.3.2
+
+# Core planner deps
+networkx>=3.0
+pytest>=8.0

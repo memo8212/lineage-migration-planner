@@ -98,6 +98,13 @@ class Graph:
     def add_edge(self, src: str, dst: str, kind: str, detail: str = "") -> None:
         if src == dst:
             return
+        # ensure both endpoints exist (parsers may reference a node by id only)
+        for end in (src, dst):
+            if end not in self.nodes:
+                prefix, _, name = end.partition(":")
+                self.nodes[end] = Node(id=end, name=name.upper() or end,
+                                       kind={"ds": DATASET}.get(prefix, prefix),
+                                       meta={"placeholder": True})
         e = Edge(src, dst, kind, detail)
         if e.key() in self._edge_keys:
             return

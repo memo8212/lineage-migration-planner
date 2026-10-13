@@ -35,6 +35,26 @@ Scanned sample_estate (12 files parsed)
 Then read `artifacts/migration_plan.md` (target mapping + waves) and
 `artifacts/lineage.md` (Mermaid graph + edge table).
 
+## Interactive viewer (Streamlit)
+
+```bash
+pip install -r requirements-streamlit.txt      # streamlit + pyvis
+streamlit run app.py
+```
+
+The app lets you:
+
+- **Explore the graph** — draggable/zoomable (pyvis), colored by component kind,
+  with a kind/tech/name filter in the sidebar.
+- **See the migration plan** — dependency-ordered **waves** and a sortable table
+  of each component's target / complexity / effort.
+- **Inspect a component** — pick any node to see its **upstream inputs** and
+  **downstream consumers**, plus a neighborhood subgraph at a chosen depth
+  (a quick impact analysis).
+- **Read the assessment** — inventory, hubs, entry points, cycles.
+
+Falls back to a static Graphviz view if `pyvis` isn't installed.
+
 ## What it extracts
 
 | Technology | Parses | Produces |
