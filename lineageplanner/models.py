@@ -16,6 +16,7 @@ PIPELINE = "pipeline"    # an ingest pipeline (es/ldp)
 PARAM = "param"          # a parameter/variable
 LIB = "lib"              # a library/connection
 INDEX = "index"          # a search index
+COLUMN = "column"        # a column (column-level lineage)
 
 # edge kinds
 READS = "reads"

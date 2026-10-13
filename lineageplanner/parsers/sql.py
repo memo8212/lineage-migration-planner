@@ -4,6 +4,7 @@ from __future__ import annotations
 import re
 from pathlib import Path
 
+from lineageplanner.columns import column_edges
 from lineageplanner.models import DATASET, DERIVES, READS, WRITES, dataset_id, node_id
 from lineageplanner.parsers.base import Parsed, Parser
 
@@ -30,22 +31,35 @@ class SqlParser(Parser):
                     out.append(m.group(1))
             return out
 
+        def add_columns(out_table: str, sources: list, stmt: str) -> None:
+            if not getattr(self, "columns", False):
+                return
+            nodes, edges = column_edges(out_table, sources, stmt)
+            for n in nodes:
+                p.nodes.append(n)
+            for src, dst, kind, detail in edges:
+                p.edge(src, dst, kind, detail)
+
         # CTAS: create table X as select ... from Y
         for m in _RE_CTAS.finditer(text):
             out, body = m.group(1), m.group(2)
             p.node(dataset_id(out), out.upper(), DATASET, "sql", relpath)
             p.edge(prog.id, dataset_id(out), WRITES, "ctas")
-            for src in refs(body):
+            sources = refs(body)
+            for src in sources:
                 p.node(dataset_id(src), src.upper(), DATASET, "sql", relpath)
                 p.edge(dataset_id(src), dataset_id(out), READS, "ctas from")
+            add_columns(out, sources, body)
 
         for m in _RE_CREATE_VIEW.finditer(text):
             out, body = m.group(1), m.group(2)
             p.node(dataset_id(out), out.upper(), DATASET, "sql", relpath, {"object": "view"})
             p.edge(prog.id, dataset_id(out), DERIVES, "create view")
-            for src in refs(body):
+            sources = refs(body)
+            for src in sources:
                 p.node(dataset_id(src), src.upper(), DATASET, "sql", relpath)
                 p.edge(dataset_id(src), dataset_id(out), READS, "view from")
+            add_columns(out, sources, body)
 
         for m in _RE_CREATE_TABLE.finditer(text):
             out = m.group(1)
@@ -55,9 +69,11 @@ class SqlParser(Parser):
             out = m.group(1)
             p.node(dataset_id(out), out.upper(), DATASET, "sql", relpath)
             p.edge(prog.id, dataset_id(out), WRITES, "insert")
-            for src in refs(m.group(0)):
+            sources = refs(m.group(0))
+            for src in sources:
                 p.node(dataset_id(src), src.upper(), DATASET, "sql", relpath)
                 p.edge(dataset_id(src), dataset_id(out), READS, "insert from")
+            add_columns(out, sources, m.group(0))
 
         p.node(node_id("program", path.stem), path.stem, "program", "sql", relpath,
                {"lines": len(text.splitlines())})

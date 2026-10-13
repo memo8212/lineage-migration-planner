@@ -6,6 +6,11 @@ from lineageplanner.models import Edge, Graph, Node  # noqa: F401
 from lineageplanner.parsers import parse_estate  # noqa: F401
 from lineageplanner.plan import build_plan, write_plan  # noqa: F401
 from lineageplanner.report import write_lineage  # noqa: F401
+from lineageplanner.impact import (  # noqa: F401
+    downstream_closure, impact_md, impact_report, upstream_closure,
+)
 
-__all__ = ["Graph", "Node", "Edge", "parse_estate", "build_plan", "write_plan", "write_lineage"]
+__all__ = ["Graph", "Node", "Edge", "parse_estate", "build_plan", "write_plan",
+           "write_lineage", "impact_md", "impact_report",
+           "downstream_closure", "upstream_closure"]
 __version__ = "0.1.0"

@@ -4,6 +4,7 @@ from __future__ import annotations
 import re
 from pathlib import Path
 
+from lineageplanner.columns import column_edges
 from lineageplanner.models import DATASET, FILE, PROGRAM, READS, WRITES, dataset_id, file_id, node_id
 from lineageplanner.parsers.base import Parsed, Parser
 
@@ -53,6 +54,11 @@ class PythonParser(Parser):
             for o in outs:
                 p.node(dataset_id(o), o.upper(), DATASET, "python", relpath)
                 p.edge(prog.id, dataset_id(o), WRITES, "spark.sql")
+                if getattr(self, "columns", False):
+                    cnodes, cedges = column_edges(o, srcs, sql)
+                    p.nodes.extend(cnodes)
+                    for s, d, k, det in cedges:
+                        p.edge(s, d, k, det)
             for s in srcs:
                 p.node(dataset_id(s), s.upper(), DATASET, "python", relpath)
                 for o in outs:

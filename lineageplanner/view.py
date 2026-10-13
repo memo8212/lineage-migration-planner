@@ -12,7 +12,8 @@ KIND_COLOR = {
     "dataset": "#8be9fd", "index": "#8be9fd", "file": "#f1fa8c",
     "job": "#ffb86c", "program": "#ff79c6", "mapping": "#bd93f9",
     "pipeline": "#50fa7b", "param": "#6272a4", "lib": "#8f8f8f",
-    "search": "#ffb86c", "field": "#cccccc", "fd": "#cccccc", "copybook": "#cccccc",
+    "search": "#ffb86c", "field": "#cccccc", "column": "#6272a4",
+    "fd": "#cccccc", "copybook": "#cccccc",
 }
 
 KIND_SHAPE = {

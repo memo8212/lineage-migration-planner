@@ -4,6 +4,7 @@ from __future__ import annotations
 import re
 from pathlib import Path
 
+from lineageplanner.columns import column_edges
 from lineageplanner.models import DATASET, FILE, INCLUDES, PARAM, PROGRAM, READS, WRITES, dataset_id, file_id, node_id
 from lineageplanner.parsers.base import Parsed, Parser
 
@@ -68,14 +69,21 @@ class SasParser(Parser):
             out = m.group(1)
             p.node(dataset_id(out), out.upper(), DATASET, "sas", relpath)
             p.edge(prog.id, dataset_id(out), WRITES, "proc sql create")
-            for fm in _RE_FROM.finditer(text[m.end():]):
-                for src in _tables(fm.group(1)):
-                    p.node(dataset_id(src), src.upper(), DATASET, "sas", relpath)
-                    p.edge(dataset_id(src), dataset_id(out), READS, "proc sql from")
-            for jm in _RE_JOIN.finditer(text[m.end():]):
-                src = jm.group(1)
+            semi = text.find(";", m.end())
+            stmt = text[m.start(): semi if semi != -1 else len(text)]
+            sources = []
+            for fm in _RE_FROM.finditer(stmt):
+                sources += _tables(fm.group(1))
+            for jm in _RE_JOIN.finditer(stmt):
+                sources.append(jm.group(1))
+            for src in sources:
                 p.node(dataset_id(src), src.upper(), DATASET, "sas", relpath)
-                p.edge(dataset_id(src), dataset_id(out), READS, "proc sql join")
+                p.edge(dataset_id(src), dataset_id(out), READS, "proc sql from/join")
+            if getattr(self, "columns", False):
+                cnodes, cedges = column_edges(out, sources, stmt)
+                p.nodes.extend(cnodes)
+                for s, d, k, det in cedges:
+                    p.edge(s, d, k, det)
 
         for m in _RE_SORT.finditer(text):
             p.node(dataset_id(m.group(1)), m.group(1).upper(), DATASET, "sas", relpath)

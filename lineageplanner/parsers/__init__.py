@@ -33,9 +33,14 @@ def pick_parser(path: Path):
     return None
 
 
-def parse_estate(root: str | Path) -> Graph:
-    """Scan a directory tree and build one deterministic lineage graph."""
+def parse_estate(root: str | Path, columns: bool = False) -> Graph:
+    """Scan a directory tree and build one deterministic lineage graph.
+
+    Set `columns=True` to also extract column-level lineage.
+    """
     root = Path(root)
+    for parser in PARSERS:
+        parser.columns = columns
     graph = Graph()
     files = sorted(p for p in root.rglob("*")
                    if p.is_file()

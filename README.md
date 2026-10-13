@@ -20,6 +20,8 @@ Point it at a **bunch of legacy files** and it will:
 ```bash
 pip install -r requirements.txt
 python -m lineageplanner scan sample_estate --out artifacts
+python -m lineageplanner scan sample_estate --columns --out artifacts   # + column lineage
+python -m lineageplanner impact sample_estate CARDS_CLEAN --out artifacts  # what breaks
 ```
 
 Output:
@@ -54,6 +56,38 @@ The app lets you:
 - **Read the assessment** — inventory, hubs, entry points, cycles.
 
 Falls back to a static Graphviz view if `pyvis` isn't installed.
+
+## Column-level lineage
+
+`scan --columns` (or the sidebar toggle in the app) parses `SELECT` lists and
+adds **column nodes + `derives` edges**:
+
+```
+CREATE TABLE out AS SELECT t.account_no, t.amount + 1 AS bumped FROM t
+  →  T.account_no --copy--> OUT.account_no
+     T.amount     --expr--> OUT.bumped
+```
+
+It's heuristic: qualified columns (`t.col`) resolve to their table; unqualified
+columns are attributed to every source table in the statement (marked
+`ambiguous`). Covers SQL, SAS `proc sql`, and PySpark `spark.sql`.
+
+## Impact analysis — "what breaks if X changes"
+
+```bash
+python -m lineageplanner impact sample_estate CARDS_CLEAN
+```
+
+```
+If CARDS_CLEAN changes…
+- 8 downstream components are affected (≈32h of migrated code to review).
+- It depends on 4 upstream components.
+```
+
+`impact_report()` computes the **downstream closure** (all transitive consumers),
+grouped by kind/tech with a review-effort estimate, plus the **upstream closure**
+(what it depends on). In the app, the **Inspector** tab shows the same numbers and
+offers a **downloadable Markdown report**.
 
 ## What it extracts
 

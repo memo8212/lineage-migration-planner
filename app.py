@@ -12,6 +12,7 @@ import streamlit.components.v1 as components
 
 from lineageplanner import build_plan, parse_estate
 from lineageplanner import view
+from lineageplanner.impact import impact_md, impact_report
 from lineageplanner.report import assessment_md, to_dot
 
 st.set_page_config(page_title="Lineage & Migration Planner", layout="wide")
@@ -20,18 +21,20 @@ st.caption("Parse a legacy estate → linked lineage graph → dependency-ordere
 
 
 @st.cache_resource
-def load_graph(root: str):
-    return parse_estate(root)
+def load_graph(root: str, columns: bool = False):
+    return parse_estate(root, columns=columns)
 
 
 # ------------------------------------------------------------------ sidebar
 st.sidebar.header("Estate")
 root = st.sidebar.text_input("Directory", "sample_estate")
+columns = st.sidebar.checkbox("Column-level lineage", value=False,
+                              help="Also extract column → column edges (SQL/SAS/PySpark).")
 if not Path(root).exists():
     st.error(f"Directory not found: {root}")
     st.stop()
 
-graph = load_graph(root)
+graph = load_graph(root, columns)
 plan = build_plan(graph)
 stats = graph.stats()
 
@@ -103,6 +106,20 @@ with tabs[3]:
     sub = view.subgraph(graph, keep)
     st.markdown("**Upstream** (inputs): " + (", ".join(det["upstream"]) or "—"))
     st.markdown("**Downstream** (consumers): " + (", ".join(det["downstream"]) or "—"))
+
+    # ---- impact analysis: what breaks if this component changes ----
+    imp = impact_report(graph, plan, nid)
+    st.divider()
+    st.subheader("💥 Impact")
+    i1, i2, i3 = st.columns(3)
+    i1.metric("Downstream affected", imp["affected_summary"]["count"])
+    i2.metric("Review effort (h)", imp["affected_summary"]["effort_hours"])
+    i3.metric("Depends on", imp["depends_summary"]["count"])
+    st.caption("Affected kinds: " + str(imp["affected_summary"]["by_kind"] or "—"))
+    st.download_button("⬇️ Download impact report (Markdown)",
+                       impact_md(graph, plan, nid),
+                       file_name=f"impact_{nid.replace(':', '_').replace('.', '_')}.md")
+
     html = view.to_pyvis_html(sub, height=460)
     if html:
         components.html(html, height=480, scrolling=True)
